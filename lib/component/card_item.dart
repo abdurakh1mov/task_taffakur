@@ -14,26 +14,36 @@ class CardItem extends StatefulWidget {
     required this.blurDegree,
     required this.backgroundImage,
     required this.backgroundImageFromStorage,
+    required this.sendColor,
+    required this.backgroundColor,
   });
   final double blurDegree;
   final String cardNumber;
   final String expiredDate;
   final String fullName;
   final bool isCreating;
+  final Color? backgroundColor;
   final String backgroundImage;
   final File? backgroundImageFromStorage;
+  final Function(Color) sendColor;
   @override
   State<CardItem> createState() => _CardItemState();
 }
 
 class _CardItemState extends State<CardItem> {
   Color pickerColor = const Color(0xff443a49);
-  Color currentColor = Colors.blue;
+  Color? currentColor = const Color(0xff443a49);
   void changeColor(Color color) {
     setState(() {
-      pickerColor = color;
       currentColor = color;
+      widget.sendColor(currentColor!);
     });
+  }
+
+  @override
+  void initState() {
+    currentColor = widget.backgroundColor ?? const Color(0xffffffff);
+    super.initState();
   }
 
   @override
@@ -42,30 +52,33 @@ class _CardItemState extends State<CardItem> {
       builder: (context, constraints) {
         return Container(
           decoration: BoxDecoration(
-              borderRadius: const BorderRadius.all(
-                Radius.circular(24),
-              ),
-              color: currentColor),
+            borderRadius: const BorderRadius.all(
+              Radius.circular(24),
+            ),
+            color: currentColor,
+          ),
           height: 240,
           margin: const EdgeInsets.all(16),
           child: Stack(
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: (widget.backgroundImageFromStorage == null)
-                    ? Image.asset(
-                        "assets/images/${widget.backgroundImage}",
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        height: double.infinity,
-                      )
-                    : Image.file(
-                        widget.backgroundImageFromStorage!,
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                        height: double.infinity,
-                      ),
-              ),
+              if (widget.backgroundImageFromStorage != null ||
+                  widget.backgroundImage != "")
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: (widget.backgroundImageFromStorage == null)
+                      ? Image.asset(
+                          "assets/images/${widget.backgroundImage}",
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                        )
+                      : Image.file(
+                          widget.backgroundImageFromStorage!,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                        ),
+                ),
               ClipRRect(
                 borderRadius: BorderRadius.circular(24),
                 child: BackdropFilter(
@@ -160,7 +173,8 @@ class _CardItemState extends State<CardItem> {
                             Align(
                               alignment: Alignment.center,
                               child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   const Text(
                                     "Qobil Abduraximov",
@@ -181,27 +195,36 @@ class _CardItemState extends State<CardItem> {
                                             onPressed: () {
                                               showDialog(
                                                 context: context,
-                                                builder: (BuildContext context) {
+                                                builder:
+                                                    (BuildContext context) {
                                                   return AlertDialog(
                                                     title: const Text(
                                                         'Pick a color!'),
                                                     content:
                                                         SingleChildScrollView(
                                                       child: ColorPicker(
-                                                        pickerColor: pickerColor,
+                                                        pickerColor:
+                                                            pickerColor,
                                                         onColorChanged:
-                                                            changeColor,
+                                                            (color) {
+                                                          setState(() =>
+                                                              pickerColor =
+                                                                  color);
+                                                        },
                                                       ),
                                                     ),
-                                                    // actions: <Widget>[
-                                                    //   ElevatedButton(
-                                                    //     child: const Text('Got it'),
-                                                    //     onPressed: () {
-                                                    //       setState(() => currentColor = pickerColor);
-                                                    //       Navigator.of(context).pop();
-                                                    //     },
-                                                    //   ),
-                                                    // ],
+                                                    actions: <Widget>[
+                                                      ElevatedButton(
+                                                        child:
+                                                            const Text('Set'),
+                                                        onPressed: () {
+                                                          changeColor(
+                                                              pickerColor);
+                                                          Navigator.of(context)
+                                                              .pop();
+                                                        },
+                                                      ),
+                                                    ],
                                                   );
                                                 },
                                               );

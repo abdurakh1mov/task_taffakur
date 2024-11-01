@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'dart:math';
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:task_taffakur/bloc/home_bloc.dart';
 import 'package:task_taffakur/component/card_item.dart';
 import 'package:task_taffakur/helper/image_helper.dart';
@@ -19,20 +21,11 @@ class AddCardPage extends StatefulWidget {
 class _AddCardPageState extends State<AddCardPage> {
   final ImagePicker _picker = ImagePicker();
   File? _imageFile;
+  var pickedColor = const Color(0xffffffff);
   var sliderValue = 0.0;
   final _imageHelper = ImageHelper();
   List<String> imageList = [];
   var selectedBackgroundImage = "";
-  Future<void> _pickImage() async {
-    final XFile? pickedFile = await _picker.pickImage(
-      source: ImageSource.gallery,
-    );
-    if (pickedFile != null) {
-      setState(() {
-        _imageFile = File(pickedFile.path);
-      });
-    }
-  }
 
   @override
   void initState() {
@@ -56,6 +49,14 @@ class _AddCardPageState extends State<AddCardPage> {
             return Column(
               children: [
                 CardItem(
+                  backgroundColor: pickedColor,
+                  sendColor: (color) {
+                    setState(() {
+                      pickedColor = color;
+                      selectedBackgroundImage = "";
+                      _imageFile = null;
+                    });
+                  },
                   blurDegree: sliderValue,
                   backgroundImage: selectedBackgroundImage,
                   backgroundImageFromStorage: _imageFile,
@@ -132,18 +133,8 @@ class _AddCardPageState extends State<AddCardPage> {
                               ),
                             )
                           : GestureDetector(
-                              onTap: () async {
-                                final file = await _imageHelper.pickImage();
-                                if (file != null) {
-                                  final croppedFile = await _imageHelper.crop(
-                                    file: file,
-                                    cropStyle: CropStyle.rectangle,
-                                  );
-                                  if (croppedFile != null) {
-                                    setState(() =>
-                                        _imageFile = File(croppedFile.path));
-                                  }
-                                }
+                              onTap: () {
+                                _pickImage();
                               },
                               child: Container(
                                 height: 40,
@@ -169,10 +160,6 @@ class _AddCardPageState extends State<AddCardPage> {
                 const Expanded(
                   child: SizedBox.shrink(),
                 ),
-                // _imageFile != null
-                //     ? Image.file(_imageFile!)
-                //     : const Text('No image selected.'),
-                // const SizedBox(height: 20),
                 Container(
                   margin:
                       const EdgeInsets.only(left: 16, right: 16, bottom: 40),
@@ -182,10 +169,11 @@ class _AddCardPageState extends State<AddCardPage> {
                     onPressed: () {
                       context.read<HomeBloc>().add(
                             HomeEvent.setData(
-                                blurDegree: sliderValue,
-                                cardBackgroundImage: selectedBackgroundImage,
-                                cardBackgroundImageFromStorage: _imageFile,
-                                backgroundColor: Colors.purple),
+                              blurDegree: sliderValue,
+                              cardBackgroundImage: selectedBackgroundImage,
+                              cardBackgroundImageFromStorage: _imageFile,
+                              backgroundColor: pickedColor,
+                            ),
                           );
                       Navigator.pop(context);
                     },
@@ -212,5 +200,25 @@ class _AddCardPageState extends State<AddCardPage> {
             );
           },
         ));
+  }
+
+  Future<void> _pickImage() async {
+    final XFile? pickedFile = await _picker.pickImage(
+      source: ImageSource.gallery,
+    );
+    try {
+      if (pickedFile != null) {
+        final file = XFile(pickedFile.path);
+        final croppedFile = await _imageHelper.crop(
+          file: file,
+          cropStyle: CropStyle.rectangle,
+        );
+        if (croppedFile != null) {
+          setState(() => _imageFile = File(croppedFile.path));
+        }
+      }
+    } catch (e) {
+      print("Error cropping image: $e");
+    }
   }
 }

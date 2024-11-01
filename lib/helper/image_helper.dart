@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -24,12 +25,23 @@ class ImageHelper {
   Future<CroppedFile?> crop(
           {required XFile file,
           CropStyle cropStyle = CropStyle.rectangle}) async =>
-      await _imageCropper.cropImage(
-          // cropStyle: cropStyle,
-          sourcePath: file.path,
-          compressQuality: 100,
-          uiSettings: [
-            IOSUiSettings(),
-            AndroidUiSettings(),
-          ]);
+      await _imageCropper
+          .cropImage(sourcePath: file.path, compressQuality: 100, uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: 'Cropper',
+          toolbarColor: Colors.blue,
+          toolbarWidgetColor: Colors.white,
+          aspectRatioPresets: [
+            CropAspectRatioPreset.original,
+            CropAspectRatioPreset.square,
+          ],
+        ),
+        IOSUiSettings(
+          title: 'Cropper',
+          aspectRatioPresets: [
+            CropAspectRatioPreset.original,
+            CropAspectRatioPreset.square,
+          ],
+        ),
+      ]);
 }
